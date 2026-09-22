@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 88" fill="none" role="img" aria-label="Barber SBX">
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8fd0ff"/>
+      <stop offset="45%" stop-color="#3da6ff"/>
+      <stop offset="100%" stop-color="#1d6fd4"/>
+    </linearGradient>
+    <linearGradient id="pole" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f7fb"/>
+      <stop offset="40%" stop-color="#e31b28"/>
+      <stop offset="70%" stop-color="#3da6ff"/>
+      <stop offset="100%" stop-color="#f4f7fb"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(8,8)">
+    <rect x="10" y="4" width="10" height="56" rx="5" fill="url(#pole)"/>
+    <circle cx="15" cy="6" r="7" fill="url(#blue)"/>
+    <rect x="42" y="4" width="10" height="56" rx="5" fill="url(#pole)"/>
+    <circle cx="47" cy="6" r="7" fill="url(#blue)"/>
+  </g>
+  <text x="78" y="38" fill="url(#blue)" font-family="Cinzel, Times New Roman, serif" font-size="28" font-weight="600" letter-spacing="6">BARBER</text>
+  <text x="78" y="64" fill="#f4f8ff" font-family="Cinzel, Times New Roman, serif" font-size="26" font-weight="700" letter-spacing="14">SBX</text>
+  <text x="78" y="80" fill="#8fd0ff" font-family="Outfit, sans-serif" font-size="7" letter-spacing="3.4">HAVE SOME CONFIDENCE</text>
+</svg>
