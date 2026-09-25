@@ -417,6 +417,22 @@ function setupVideos() {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") playAll();
   });
+
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const video = entry.target;
+          video.muted = true;
+          const start = video.play();
+          if (start && typeof start.catch === "function") start.catch(() => {});
+        });
+      },
+      { threshold: 0.2 }
+    );
+    document.querySelectorAll("video").forEach((video) => io.observe(video));
+  }
 }
 
 window.addEventListener("load", () => {
