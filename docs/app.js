@@ -394,9 +394,14 @@ function downloadIcs(booking) {
   URL.revokeObjectURL(url);
 }
 
+function isSlideVideo(video) {
+  return Boolean(video.closest("[data-cut-show]"));
+}
+
 function setupVideos() {
   const playAll = () => {
     document.querySelectorAll("video").forEach((video) => {
+      if (isSlideVideo(video)) return;
       video.muted = true;
       video.defaultMuted = true;
       video.playsInline = true;
@@ -424,6 +429,7 @@ function setupVideos() {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
           const video = entry.target;
+          if (isSlideVideo(video)) return;
           video.muted = true;
           const start = video.play();
           if (start && typeof start.catch === "function") start.catch(() => {});
@@ -431,8 +437,148 @@ function setupVideos() {
       },
       { threshold: 0.2 }
     );
-    document.querySelectorAll("video").forEach((video) => io.observe(video));
+    document.querySelectorAll("video").forEach((video) => {
+      if (!isSlideVideo(video)) io.observe(video);
+    });
   }
+}
+
+function setupCutShow() {
+  document.querySelectorAll("[data-cut-show]").forEach((show) => {
+    const videos = [...show.querySelectorAll("video")];
+    const label = show.querySelector("[data-cut-label]");
+    const progress = show.querySelector("[data-cut-progress]");
+    const stage = show.querySelector(".cut-stage");
+    const prev = show.querySelector("[data-cut-prev]");
+    const next = show.querySelector("[data-cut-next]");
+    if (!videos.length || !progress) return;
+
+    let index = 0;
+    let generation = 0;
+    let timer = 0;
+    let onScreen = true;
+
+    const fills = videos.map((video, i) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("aria-label", video.dataset.label || `Video ${i + 1}`);
+      const fill = document.createElement("i");
+      button.appendChild(fill);
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        go(i);
+      });
+      progress.appendChild(button);
+      return { button, fill };
+    });
+
+    const paint = (ratio) => {
+      fills.forEach(({ fill }, i) => {
+        if (i < index) fill.style.width = "100%";
+        else if (i > index) fill.style.width = "0%";
+        else fill.style.width = `${Math.max(0, Math.min(1, ratio)) * 100}%`;
+      });
+    };
+
+    const clearArm = () => {};
+
+    const arm = () => {};
+
+    const playActive = () => {
+      const video = videos[index];
+      if (!video) return;
+      const start = video.play();
+      if (start && typeof start.catch === "function") start.catch(() => {});
+      arm(video);
+    };
+
+    const go = (nextIndex) => {
+      generation += 1;
+      index = (nextIndex + videos.length) % videos.length;
+      videos.forEach((video, i) => {
+        const active = i === index;
+        video.classList.toggle("is-active", active);
+        video.toggleAttribute("aria-hidden", !active);
+        if (active) fills[i].button.setAttribute("aria-current", "true");
+        else fills[i].button.removeAttribute("aria-current");
+        if (!active) {
+          video.pause();
+          return;
+        }
+        try {
+          video.currentTime = 0;
+        } catch (error) {
+          /* metadata may not be ready yet */
+        }
+      });
+      if (label) label.textContent = videos[index].dataset.label || "";
+      paint(0);
+      if (onScreen) playActive();
+      else {
+        videos[index].pause();
+        clearArm();
+      }
+    };
+
+    videos.forEach((video) => {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
+      video.controls = false;
+      video.loop = false;
+      video.setAttribute("muted", "");
+      video.setAttribute("playsinline", "");
+      video.setAttribute("webkit-playsinline", "");
+      video.addEventListener("timeupdate", () => {
+        if (!video.classList.contains("is-active") || !video.duration) return;
+        paint(video.currentTime / video.duration);
+      });
+      video.addEventListener("ended", () => {
+        if (!video.classList.contains("is-active")) return;
+        if (video.currentTime > 0 && video.currentTime < 0.75) return;
+        go(index + 1);
+      });
+      const rearm = () => {
+        if (video.classList.contains("is-active") && onScreen) arm(video);
+      };
+      video.addEventListener("loadedmetadata", rearm);
+      video.addEventListener("durationchange", rearm);
+    });
+
+    if (prev) prev.addEventListener("click", () => go(index - 1));
+    if (next) next.addEventListener("click", () => go(index + 1));
+    if (stage) {
+      stage.addEventListener("click", (event) => {
+        if (event.target.closest("button")) return;
+        const rect = stage.getBoundingClientRect();
+        go(event.clientX > rect.left + rect.width / 2 ? index + 1 : index - 1);
+      });
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && onScreen) playActive();
+    });
+
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            onScreen = entry.isIntersecting;
+            if (onScreen) playActive();
+            else {
+              videos[index].pause();
+              clearArm();
+            }
+          });
+        },
+        { threshold: 0.25 }
+      );
+      io.observe(show);
+    }
+
+    show.classList.add("is-ready");
+    go(0);
+  });
 }
 
 window.addEventListener("load", () => {
@@ -447,6 +593,7 @@ setupReveal();
 setupCountUp();
 setupBooking();
 setupVideos();
+setupCutShow();
 refreshStatus();
 setInterval(refreshStatus, 60000);
 document.addEventListener("visibilitychange", () => {
