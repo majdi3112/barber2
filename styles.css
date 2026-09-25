@@ -193,7 +193,10 @@ h2 {
 }
 h2 i { color: var(--red); font-style: normal; }
 .lede { font-size: 22px; }
-.about-grid, .cards {
+.about-grid {
+  max-width: 720px;
+}
+.cards {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
   gap: 28px;
